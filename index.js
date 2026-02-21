@@ -35,8 +35,16 @@ console.log("TOKEN LENGTH:", process.env.BOT_TOKEN?.length);
 
 let lastWebhookTime = Date.now();
 
-client.on('clientReady', () => {
+// ✅ แจ้งเมื่อบอทอัปเดต/รีสตาร์ท
+client.on('clientReady', async () => {
   console.log(`Logged in as ${client.user.tag}`);
+
+  try {
+    const channel = await client.channels.fetch(CHANNEL_ID);
+    await channel.send("🔄 Bot มีการอัพเดท");
+  } catch (err) {
+    console.error("Startup message failed:", err);
+  }
 });
 
 client.on('messageCreate', (msg) => {
@@ -58,7 +66,7 @@ setInterval(async () => {
 
       // 🔔 ปิง 3 รอบ ห่าง 5 วิ
       for (let i = 0; i < 3; i++) {
-        await channel.send(`<@${USER_ID}> ดูเหมือนว่าตัวเกมจะหลุดนะ!!`);
+        await channel.send(`<@${USER_ID}> 💔ดูเหมือนว่าตัวเกมจะหลุดนะ!!`);
         await new Promise(r => setTimeout(r, 5000));
       }
 
