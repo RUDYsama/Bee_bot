@@ -36,11 +36,23 @@ console.log("TOKEN LENGTH:", process.env.BOT_TOKEN?.length);
 
 let lastWebhookTime = Date.now();
 
-client.on('clientReady', () => {
+// ✅ READY + TEST MESSAGE
+client.on('clientReady', async () => {
   console.log(`Logged in as ${client.user.tag}`);
+
+  try {
+    const channel = await client.channels.fetch(CHANNEL_ID);
+    await channel.send("✅ บอทออนไลน์และเข้าถึงห้องนี้ได้แล้ว");
+    console.log("Test message sent");
+  } catch (err) {
+    console.error("Test send failed:", err);
+  }
 });
 
+// 🔍 DEBUG ทุกข้อความ (ช่วยหา webhook)
 client.on('messageCreate', (msg) => {
+  console.log("MSG:", msg.author?.username, "webhook?", !!msg.webhookId);
+
   if (msg.channel.id !== CHANNEL_ID) return;
 
   if (msg.webhookId) {
@@ -49,7 +61,7 @@ client.on('messageCreate', (msg) => {
   }
 });
 
-// เช็คทุก 5 นาที
+// ⏱️ Watchdog
 setInterval(async () => {
   try {
     const diff = Date.now() - lastWebhookTime;
