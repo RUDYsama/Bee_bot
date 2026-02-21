@@ -2,12 +2,14 @@
 const express = require('express');
 const app = express();
 
+const PORT = process.env.PORT || 3000;
+
 app.get('/', (req, res) => {
   res.send('Bot is alive!');
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+// ⚠️ สำคัญ: ต้อง bind 0.0.0.0
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Web server running on port ${PORT}`);
 });
 
@@ -28,7 +30,7 @@ const CHANNEL_ID = "1300853186990575617";
 const USER_ID = "511921901677969408";
 const TIMEOUT = 20 * 60 * 1000;
 
-// 🔍 DEBUG TOKEN (ชั่วคราว)
+// 🔍 DEBUG TOKEN
 console.log("TOKEN EXISTS:", !!process.env.BOT_TOKEN);
 console.log("TOKEN LENGTH:", process.env.BOT_TOKEN?.length);
 
@@ -49,12 +51,16 @@ client.on('messageCreate', (msg) => {
 
 // เช็คทุก 5 นาที
 setInterval(async () => {
-  const diff = Date.now() - lastWebhookTime;
+  try {
+    const diff = Date.now() - lastWebhookTime;
 
-  if (diff > TIMEOUT) {
-    const channel = await client.channels.fetch(CHANNEL_ID);
-    await channel.send(`<@${USER_ID}> ⚠️ Webhook หยุดเกิน 20 นาทีแล้ว!`);
-    lastWebhookTime = Date.now();
+    if (diff > TIMEOUT) {
+      const channel = await client.channels.fetch(CHANNEL_ID);
+      await channel.send(`<@${USER_ID}> ⚠️ Webhook หยุดเกิน 20 นาทีแล้ว!`);
+      lastWebhookTime = Date.now();
+    }
+  } catch (err) {
+    console.error("Watchdog error:", err);
   }
 }, 5 * 60 * 1000);
 
