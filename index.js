@@ -8,7 +8,6 @@ app.get('/', (req, res) => {
   res.send('Bot is alive!');
 });
 
-// ⚠️ สำคัญ: ต้อง bind 0.0.0.0
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Web server running on port ${PORT}`);
 });
@@ -28,7 +27,7 @@ const client = new Client({
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHANNEL_ID = "1300853186990575617";
 const USER_ID = "511921901677969408";
-const TIMEOUT = 60 * 1000; // 1 นาที (เทสเร็ว)
+const TIMEOUT = 60 * 1000;
 
 // 🔍 DEBUG TOKEN
 console.log("TOKEN EXISTS:", !!process.env.BOT_TOKEN);
@@ -49,7 +48,7 @@ client.on('messageCreate', (msg) => {
   }
 });
 
-// 🔥 เช็คทุก 1 นาที (ลดดีเลย์)
+// 🔥 เช็คทุก 1 นาที
 setInterval(async () => {
   try {
     const diff = Date.now() - lastWebhookTime;
@@ -57,10 +56,10 @@ setInterval(async () => {
     if (diff > TIMEOUT) {
       const channel = await client.channels.fetch(CHANNEL_ID);
 
-      // 🔔 ปิง 5 รอบ
-      for (let i = 0; i < 5; i++) {
-        await channel.send(`<@${USER_ID}> ⚠️ Webhook หยุดเกินเวลาที่กำหนดแล้ว!`);
-        await new Promise(r => setTimeout(r, 2000));
+      // 🔔 ปิง 3 รอบ ห่าง 5 วิ
+      for (let i = 0; i < 3; i++) {
+        await channel.send(`<@${USER_ID}> ดูเหมือนว่าตัวเกมจะหลุดนะ!!`);
+        await new Promise(r => setTimeout(r, 5000));
       }
 
       lastWebhookTime = Date.now();
@@ -68,6 +67,6 @@ setInterval(async () => {
   } catch (err) {
     console.error("Watchdog error:", err);
   }
-}, 60 * 1000); // ← จาก 5 นาที → เหลือ 1 นาที
+}, 60 * 1000);
 
 client.login(BOT_TOKEN);
