@@ -27,7 +27,7 @@ const client = new Client({
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHANNEL_ID = "1300853186990575617";
 const USER_ID = "511921901677969408";
-const TIMEOUT = 60 * 1000;
+const TIMEOUT = 20 * 60 * 1000;
 
 // 🔍 DEBUG TOKEN
 console.log("TOKEN EXISTS:", !!process.env.BOT_TOKEN);
