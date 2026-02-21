@@ -28,7 +28,7 @@ const client = new Client({
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHANNEL_ID = "1300853186990575617";
 const USER_ID = "511921901677969408";
-const TIMEOUT = 2 * 60 * 1000;
+const TIMEOUT = 60 * 1000; // 1 นาที (เทสเร็ว)
 
 // 🔍 DEBUG TOKEN
 console.log("TOKEN EXISTS:", !!process.env.BOT_TOKEN);
@@ -49,19 +49,25 @@ client.on('messageCreate', (msg) => {
   }
 });
 
-// เช็คทุก 5 นาที
+// 🔥 เช็คทุก 1 นาที (ลดดีเลย์)
 setInterval(async () => {
   try {
     const diff = Date.now() - lastWebhookTime;
 
     if (diff > TIMEOUT) {
       const channel = await client.channels.fetch(CHANNEL_ID);
-      await channel.send(`<@${USER_ID}> ⚠️ Webhook หยุดเกิน 20 นาทีแล้ว!`);
+
+      // 🔔 ปิง 5 รอบ
+      for (let i = 0; i < 5; i++) {
+        await channel.send(`<@${USER_ID}> ⚠️ Webhook หยุดเกินเวลาที่กำหนดแล้ว!`);
+        await new Promise(r => setTimeout(r, 2000));
+      }
+
       lastWebhookTime = Date.now();
     }
   } catch (err) {
     console.error("Watchdog error:", err);
   }
-}, 5 * 60 * 1000);
+}, 60 * 1000); // ← จาก 5 นาที → เหลือ 1 นาที
 
 client.login(BOT_TOKEN);
