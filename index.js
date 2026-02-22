@@ -75,6 +75,6 @@ setInterval(async () => {
   } catch (err) {
     console.error("Watchdog error:", err);
   }
-}, 60 * 1000);
+}, 5*60 * 1000);
 
 client.login(BOT_TOKEN);
