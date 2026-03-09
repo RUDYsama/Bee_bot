@@ -48,30 +48,36 @@ client.on('clientReady', async () => {
 });
 
 // ===== MESSAGE LISTENER =====
-client.on('messageCreate', (msg) => {
+client.on('messageCreate', async (msg) => {
 
   if (msg.channel.id !== CHANNEL_ID) return;
+
+  const text = msg.content.toLowerCase();
 
   // ===== OWNER COMMANDS =====
   if (!msg.webhookId && msg.author.id === USER_ID) {
 
-    if (msg.content === "!bee off") {
+    if (text === "!bee off") {
+
       enabled = false;
       alertActive = false;
       lastWebhookTime = Date.now();
+
       msg.reply("🐝 Bee bot หยุดทำงานแล้ว");
       return;
     }
 
-    if (msg.content === "!bee on") {
+    if (text === "!bee on") {
+
       enabled = true;
       alertActive = false;
       lastWebhookTime = Date.now();
+
       msg.reply("🐝 Bee bot กลับมาทำงานแล้ว");
       return;
     }
 
-    if (msg.content === "!bee status") {
+    if (text === "!bee status") {
 
       const diff = Math.floor((Date.now() - lastWebhookTime) / 60000);
 
@@ -84,12 +90,37 @@ client.on('messageCreate', (msg) => {
       return;
     }
 
+    if (text === "!bee command" || text.includes("ขอดูคำสั่ง")) {
+
+      msg.reply(
+`🐝 Bee Bot Commands
+
+!bee on
+เปิดระบบตรวจสอบ
+
+!bee off
+ปิดระบบตรวจสอบ
+
+!bee status
+ดูสถานะบอท
+
+!bee command
+ดูคำสั่งทั้งหมด
+
+ระบบจะเตือนเมื่อ Webhook หายเกิน 20 นาที`
+      );
+
+      return;
+    }
+
   }
 
   // ===== WEBHOOK DETECT =====
   if (msg.webhookId) {
 
     lastWebhookTime = Date.now();
+
+    // reset การแจ้งเตือน
     alertActive = false;
 
     console.log("Webhook detected");
@@ -122,6 +153,10 @@ setInterval(async () => {
         await new Promise(r => setTimeout(r, 5000));
 
       }
+
+      // หลังปิงครบ 3 รอบแล้ว
+      // จะไม่ปิงอีกจนกว่า webhook ใหม่จะมา
+      console.log("Alert sent (3 times). Waiting for webhook...");
 
     }
 
