@@ -1,19 +1,4 @@
-// ===== KEEP ALIVE (สำคัญสำหรับ Railway) =====
-const express = require('express');
-const app = express();
-
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-  res.send('Bot is alive!');
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Web server running on port ${PORT}`);
-});
-
-// ===== DISCORD BOT =====
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits } = require("discord.js");
 
 const client = new Client({
   intents: [
@@ -23,114 +8,122 @@ const client = new Client({
   ]
 });
 
-// ===== CONFIG =====
-const BOT_TOKEN = process.env.BOT_TOKEN;
-const CHANNEL_ID = "1300853186990575617";
-const USER_ID = "511921901677969408";
-const TIMEOUT = 20 * 60 * 1000;
+const TOKEN = process.env.TOKEN;
+const CHANNEL_ID = process.env.CHANNEL_ID;
+const USER_ID = process.env.USER_ID;
 
-let enabled = true;
 let lastWebhookTime = Date.now();
-let alertActive = false;
+let enabled = true;
+let alertRunning = false;
 
-// ===== BOT READY =====
-client.on('clientReady', async () => {
+const CHECK_INTERVAL = 60000; // เช็คทุก 1 นาที
+const TIMEOUT = 20 * 60 * 1000; // 20 นาที
+const ALERT_REPEAT = 3;
+const ALERT_DELAY = 5000;
 
+client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 
-  try {
-    const channel = await client.channels.fetch(CHANNEL_ID);
-    await channel.send("🔄 Bot มีการอัพเดท");
-  } catch (err) {
-    console.error(err);
+  const channel = client.channels.cache.get(CHANNEL_ID);
+  if (channel) {
+    channel.send("🤖 Bot มีการอัพเดท");
   }
 
+  startWatchdog();
 });
 
-// ===== MESSAGE LISTENER =====
-client.on('messageCreate', (msg) => {
+client.on("messageCreate", async (message) => {
 
-  if (msg.channel.id !== CHANNEL_ID) return;
+  if (message.author.bot) return;
 
-  // ===== OWNER COMMANDS =====
-  if (!msg.webhookId && msg.author.id === USER_ID) {
+  const msg = message.content.toLowerCase();
 
-    if (msg.content === "!bee off") {
-      enabled = false;
-      alertActive = false;
-      lastWebhookTime = Date.now();
-      msg.reply("🐝 Bee bot หยุดทำงานแล้ว");
-      return;
-    }
-
-    if (msg.content === "!bee on") {
-      enabled = true;
-      alertActive = false;
-      lastWebhookTime = Date.now();
-      msg.reply("🐝 Bee bot กลับมาทำงานแล้ว");
-      return;
-    }
-
-    if (msg.content === "!bee status") {
-
-      const diff = Math.floor((Date.now() - lastWebhookTime) / 60000);
-
-      msg.reply(
-        `🐝 Bee bot status\n` +
-        `เปิดอยู่: ${enabled}\n` +
-        `Webhook ล่าสุด: ${diff} นาทีที่แล้ว`
-      );
-
-      return;
-    }
-
-  }
-
-  // ===== WEBHOOK DETECT =====
-  if (msg.webhookId) {
-
+  // อ่าน webhook
+  if (message.webhookId) {
     lastWebhookTime = Date.now();
-    alertActive = false;
+    return;
+  }
 
-    console.log("Webhook detected");
+  // ===== commands =====
 
+  if (msg === "!bee on") {
+    enabled = true;
+    lastWebhookTime = Date.now();
+    message.reply("🐝 Bee bot เริ่มทำงานแล้ว");
+  }
+
+  if (msg === "!bee off") {
+    enabled = false;
+    lastWebhookTime = Date.now();
+    message.reply("🐝 Bee bot หยุดทำงานแล้ว");
+  }
+
+  if (msg === "!bee status") {
+    message.reply(
+      `🐝 Bee bot status: ${enabled ? "ทำงานอยู่" : "ปิดอยู่"}`
+    );
+  }
+
+  if (msg === "!bee command" || msg.includes("ขอดูคำสั่ง")) {
+    message.reply(`
+🐝 Bee Bot Commands
+
+!bee on
+→ เปิดการตรวจสอบ
+
+!bee off
+→ ปิดการตรวจสอบ
+
+!bee status
+→ ดูสถานะบอท
+
+!bee command
+→ ดูคำสั่งทั้งหมด
+
+ระบบจะเตือนเมื่อ Webhook หายเกิน 20 นาที
+`);
   }
 
 });
 
-// ===== WATCHDOG =====
-setInterval(async () => {
+function startWatchdog() {
 
-  try {
+  setInterval(async () => {
 
     if (!enabled) return;
 
-    const diff = Date.now() - lastWebhookTime;
+    const now = Date.now();
+    const diff = now - lastWebhookTime;
 
-    if (diff > TIMEOUT && !alertActive) {
+    if (diff > TIMEOUT && !alertRunning) {
 
-      alertActive = true;
+      alertRunning = true;
 
-      const channel = await client.channels.fetch(CHANNEL_ID);
+      const channel = client.channels.cache.get(CHANNEL_ID);
 
-      for (let i = 0; i < 3; i++) {
+      if (!channel) {
+        alertRunning = false;
+        return;
+      }
+
+      for (let i = 0; i < ALERT_REPEAT; i++) {
 
         if (!enabled) break;
 
-        await channel.send(`<@${USER_ID}> ดูเหมือนว่าตัวเกมจะหลุดนะ!!`);
+        await channel.send(
+          `<@${USER_ID}> ดูเหมือนว่าตัวเกมจะหลุดนะ!!`
+        );
 
-        await new Promise(r => setTimeout(r, 5000));
-
+        await new Promise(r => setTimeout(r, ALERT_DELAY));
       }
 
+      alertRunning = false;
+
+      lastWebhookTime = Date.now();
     }
 
-  } catch (err) {
+  }, CHECK_INTERVAL);
 
-    console.error("Watchdog error:", err);
+}
 
-  }
-
-}, 60 * 1000);
-
-client.login(BOT_TOKEN);
+client.login(TOKEN);
